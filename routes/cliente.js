@@ -5,7 +5,6 @@ var clienteController = require('../controllers/ClienteController');
 
 var api = express.Router();
 var auth = require('../middlewares/authenticate');
-
 api.post('/registro_cliente_tienda',clienteController.registro_cliente_tienda);
 api.get('/listar_clientes_tienda',auth.auth,clienteController.listar_clientes_tienda);
 
@@ -39,5 +38,8 @@ api.get('/consultarIDPago/:id',auth.auth,clienteController.consultarIDPago);
 api.post('/registro_compra_cliente',auth.auth,clienteController.registro_compra_cliente);
 api.get('/obtener_reviews_cliente/:id',auth.auth,clienteController.obtener_reviews_cliente);
 api.post('/enviar_mensaje_contacto',clienteController.enviar_mensaje_contacto);
+
+//2F
+api.post('/comprobar_codigo',clienteController.comprobar_codigo);
 
 module.exports = api;

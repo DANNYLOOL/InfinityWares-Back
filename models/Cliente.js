@@ -14,6 +14,7 @@ var ClienteSchema = Schema({
     
     f_nacimiento: {type: String, required: false},
     dni: {type: String, required: false},
+    codigo:{type: String, required: false},
     createdAt: {type:Date, default: Date.now, require: true}
 });
 

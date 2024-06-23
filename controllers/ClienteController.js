@@ -18,6 +18,16 @@ var nodemailer = require('nodemailer');
 var smtpTransport = require('nodemailer-smtp-transport');
 var path = require('path');
 
+function generarClave(length) {
+    const caracteres = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let clave = '';
+    for (let i = 0; i < length; i++) {
+      const indice = Math.floor(Math.random() * caracteres.length);
+      clave += caracteres[indice];
+    }
+    return clave;
+  }
+
 registro_cliente_tienda = async function(req,res){
     let data = req.body;
     var clientes_arr = [];
@@ -71,6 +81,7 @@ const listar_productos_nuevos_publico = async function(req,res){
 const registro_cliente = async function(req,res){
     //
     var data = req.body;
+    console.log(data)
     var clientes_arr = [];
 
     clientes_arr = await Cliente.find({email:data.email});
@@ -121,6 +132,14 @@ const login_cliente = async function(req,res){
                         });
                     }
                 }
+
+                // Se almacena la clave (codigo) en la base de datos
+                const filtro = {email:data.email};
+                const claveGenerada = generarClave(8);
+                const actualizacion = { $set: { codigo:claveGenerada } };
+                await Cliente.updateOne(filtro, actualizacion);
+
+                enviar_codigo(claveGenerada,data.email)
 
                 res.status(200).send({
                     data:user,
@@ -594,6 +613,67 @@ const enviar_orden_compra = async function(venta){
     }
 } 
 
+const enviar_codigo = async function(codigo, email) {
+    try {
+        var transporter = nodemailer.createTransport(smtpTransport({
+            service: 'gmail',
+            host: 'smtp.gmail.com',
+            auth: {
+                user: 'danyrangel2002@gmail.com',
+                pass: 'aziroyoqavzyeeic'
+            }
+        }));
+
+        const htmlContent = `
+            <html>
+            <body>
+                <h1>Tu Código de Autenticación</h1>
+                <p>Por favor, usa el siguiente código para completar tu proceso de autenticación:</p>
+                <h2>{{codigo}}</h2>
+                <p>Si no solicitaste este código, por favor ignora este correo.</p>
+            </body>
+            </html>
+        `;
+
+        // Se inserta el código en el HTML
+        const htmlWithCode = htmlContent.replace('{{codigo}}', codigo);
+
+        var mailOptions = {
+            from: 'diegoalonssoac@gmail.com',
+            to: email,
+            subject: 'Código de Autenticación (2FA) para Tu Cuenta',
+            html: htmlWithCode
+        };
+
+        transporter.sendMail(mailOptions, function (error, info) {
+            if (error) {
+                console.log('Error sending email:', error);
+            } else {
+                console.log('Email sent: ' + info.response);
+            }
+        });
+    } catch (error) {
+        console.log('Error in enviar_codigo:', error);
+    }
+};
+
+
+const comprobar_codigo  = async function(req,res){
+    try {
+        let data = req.body;
+        const cliente = await Cliente.findOne({ email: data.email }).select('codigo');
+        if (cliente.codigo == data.codigo.toString().trim()) {
+            res.status(200).send({claveRespuesta:1});
+        }else{
+            res.status(400).send({claveRespuesta:0});
+        }
+    } catch (error) {
+        console.log(error);
+        res.status(400).send({claveRespuesta:0});
+    }
+
+}
+
 
 module.exports = {
     registro_cliente_tienda,
@@ -624,5 +704,9 @@ module.exports = {
     consultarIDPago,
     registro_compra_cliente,
     obtener_reviews_cliente,
-    enviar_mensaje_contacto
+    enviar_mensaje_contacto,
+    comprobar_codigo
 }
+
+
+
